@@ -19,7 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <svg 
-                className="w-10 h-10 text-sakura-400 dark:text-sakura-500" 
+                className="w-10 h-10 text-sakura-500 dark:text-sakura-300" 
                 viewBox="0 0 40 40" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
@@ -71,7 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {/* Decorative cherry blossoms */}
         <div className="absolute top-0 left-0 w-20 h-20 opacity-20 pointer-events-none">
-          <svg className="w-full h-full text-sakura-300 dark:text-sakura-700" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full text-sakura-500 dark:text-sakura-300" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path d="M50 10C50 10 40 20 40 30C40 35 45 40 50 40C55 40 60 35 60 30C60 20 50 10 50 10Z" />
             <path d="M30 20C30 20 20 30 25 40C28 45 35 45 40 40C45 35 35 20 30 20Z" />
             <path d="M70 20C70 20 80 30 75 40C72 45 65 45 60 40C55 35 65 20 70 20Z" />
@@ -80,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </svg>
         </div>
         <div className="absolute top-0 right-0 w-20 h-20 opacity-20 pointer-events-none">
-          <svg className="w-full h-full text-sakura-300 dark:text-sakura-700" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full text-sakura-500 dark:text-sakura-300" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path d="M50 10C50 10 40 20 40 30C40 35 45 40 50 40C55 40 60 35 60 30C60 20 50 10 50 10Z" />
             <path d="M30 20C30 20 20 30 25 40C28 45 35 45 40 40C45 35 35 20 30 20Z" />
             <path d="M70 20C70 20 80 30 75 40C72 45 65 45 60 40C55 35 65 20 70 20Z" />
