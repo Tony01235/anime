@@ -79,9 +79,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = 1; // TODO: Get from auth
       const rating = animeRatingSchema.parse(req.body);
       const savedRating = await storage.saveRating(rating, userId);
+      if (!savedRating) {
+        throw new Error("Rating could not be saved");
+      }
       res.json(savedRating);
     } catch (error) {
       console.error("Error saving rating:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid rating data", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to save rating" });
     }
   });
@@ -91,6 +97,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = 1; // TODO: Get from auth
       const ratings = await storage.getRatings(userId);
+      if (!ratings) {
+        return res.json([]);
+      }
       res.json(ratings);
     } catch (error) {
       console.error("Error fetching ratings:", error);
