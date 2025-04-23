@@ -13,11 +13,22 @@ export const useLocalStorage = () => {
   }, []);
 
   const fetchRatings = async () => {
+    toast({
+      title: "Lade Bewertungen",
+      description: "Deine Bewertungen werden geladen...",
+    });
+    
     try {
       const response = await fetch('/api/ratings');
       if (!response.ok) throw new Error('Failed to fetch ratings');
       const data = await response.json();
       setRatings(data);
+      
+      toast({
+        title: "Bewertungen geladen",
+        description: `${data.length} Bewertungen erfolgreich geladen.`,
+        variant: "default"
+      });
     } catch (error) {
       console.error('Error loading ratings:', error);
       toast({
