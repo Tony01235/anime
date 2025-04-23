@@ -9,15 +9,30 @@ export const useLocalStorage = () => {
 
   // Load ratings from server after page load
   useEffect(() => {
+    // Definieren der Lade-Funktion
     const loadRatings = () => {
-      // Warte bis die Seite vollständig geladen ist
-      if (document.readyState === 'complete') {
-        setTimeout(fetchRatings, 500);
-      } else {
-        window.addEventListener('load', () => setTimeout(fetchRatings, 500));
-      }
+      // Nur einmal aufrufen
+      fetchRatings();
+      // Event-Listener entfernen, wenn er bereits hinzugefügt wurde
+      window.removeEventListener('load', loadRatingsOnLoad);
     };
-    loadRatings();
+    
+    // Helfer-Funktion für den Event-Listener
+    const loadRatingsOnLoad = () => setTimeout(fetchRatings, 500);
+    
+    // Prüfen, ob die Seite bereits geladen ist
+    if (document.readyState === 'complete') {
+      // Wenn geladen, direkt aufrufen
+      fetchRatings();
+    } else {
+      // Wenn nicht geladen, auf "load"-Event warten
+      window.addEventListener('load', loadRatingsOnLoad);
+    }
+    
+    // Cleanup-Funktion
+    return () => {
+      window.removeEventListener('load', loadRatingsOnLoad);
+    };
   }, []);
 
   const fetchRatings = async () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -11,13 +11,25 @@ import SavedRatings from "@/pages/saved-ratings";
 import NotFound from "@/pages/not-found";
 import { AnimeRating } from "@shared/schema";
 import AnimeRatingModal from "@/components/anime-rating-modal";
-import { useLocalStorage } from "@/hooks/use-ratings";
+import { useQueryRatings } from "@/hooks/use-query-ratings";
 
 function App() {
+  // No hooks here - just wrapping with the provider
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+    </QueryClientProvider>
+  );
+}
+
+// Hooks are used in this component, after the QueryClientProvider
+function AppContent() {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [selectedAnime, setSelectedAnime] = useState<any | null>(null);
   const [currentRating, setCurrentRating] = useState<AnimeRating | null>(null);
-  const { ratings, saveRating, deleteRating } = useLocalStorage();
+  
+  // Now we can use hooks that depend on the QueryClient
+  const { ratings, saveRating, deleteRating } = useQueryRatings();
 
   const openRatingModal = (anime: any, existingRating?: AnimeRating) => {
     setSelectedAnime(anime);
@@ -41,39 +53,37 @@ function App() {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="anime-sakura-theme">
-        <TooltipProvider>
-          <Layout>
-            <Switch>
-              <Route path="/" component={() => <Home openRatingModal={openRatingModal} />} />
-              <Route 
-                path="/saved" 
-                component={() => (
-                  <SavedRatings 
-                    ratings={ratings} 
-                    openRatingModal={openRatingModal} 
-                    deleteRating={handleDeleteRating} 
-                  />
-                )} 
-              />
-              <Route component={NotFound} />
-            </Switch>
+    <ThemeProvider defaultTheme="dark" storageKey="anime-sakura-theme">
+      <TooltipProvider>
+        <Layout>
+          <Switch>
+            <Route path="/" component={() => <Home openRatingModal={openRatingModal} />} />
+            <Route 
+              path="/saved" 
+              component={() => (
+                <SavedRatings 
+                  ratings={ratings} 
+                  openRatingModal={openRatingModal} 
+                  deleteRating={handleDeleteRating} 
+                />
+              )} 
+            />
+            <Route component={NotFound} />
+          </Switch>
 
-            {selectedAnime && (
-              <AnimeRatingModal
-                isOpen={isRatingModalOpen}
-                onClose={closeRatingModal}
-                anime={selectedAnime}
-                existingRating={currentRating}
-                onSave={handleSaveRating}
-              />
-            )}
-          </Layout>
-          <Toaster />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+          {selectedAnime && (
+            <AnimeRatingModal
+              isOpen={isRatingModalOpen}
+              onClose={closeRatingModal}
+              anime={selectedAnime}
+              existingRating={currentRating}
+              onSave={handleSaveRating}
+            />
+          )}
+        </Layout>
+        <Toaster />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }
 

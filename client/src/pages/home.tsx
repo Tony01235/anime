@@ -6,7 +6,7 @@ import { Search, Bookmark, ArrowLeft } from 'lucide-react';
 import { AnimeRating, AnimeSearchResult } from '@shared/schema';
 import { AnimeRecommendations } from '@/components/anime-recommendations';
 import { CherryBlossom } from '@/components/cherry-blossom';
-import { useLocalStorage } from '@/hooks/use-ratings';
+import { useQueryRatings } from '@/hooks/use-query-ratings';
 
 interface HomeProps {
   openRatingModal: (anime: AnimeSearchResult, existingRating?: AnimeRating) => void;
@@ -15,7 +15,7 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ openRatingModal }) => {
   const [_, setLocation] = useLocation();
   const [showSearch, setShowSearch] = useState(false);
-  const { ratings } = useLocalStorage();
+  const { ratings } = useQueryRatings();
 
   return (
     <div className="min-h-screen">

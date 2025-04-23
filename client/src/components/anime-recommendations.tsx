@@ -1,5 +1,6 @@
 import React from 'react';
-import { useAnimeRecommendations } from '@/hooks/use-recommendations';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { AnimeRating, AnimeSearchResult } from '@shared/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +16,34 @@ export const AnimeRecommendations: React.FC<AnimeRecommendationsProps> = ({
   userRatings,
   onAnimeSelect
 }) => {
-  const { data, isLoading, isError } = useAnimeRecommendations(userRatings);
+  // Get the IDs of animes that the user has rated highly (>= 3.5)
+  const highlyRatedAnimeIds = userRatings
+    .filter(rating => rating.overallRating >= 3.5)
+    .map(rating => rating.animeId)
+    .slice(0, 5); // Use up to 5 anime IDs for recommendations
+  
+  // Query the recommendations
+  const { data, isLoading, isError } = useQuery<{recommendations: AnimeSearchResult[]}>({
+    queryKey: ['anime-recommendations', highlyRatedAnimeIds],
+    queryFn: async () => {
+      if (!highlyRatedAnimeIds.length) {
+        return { recommendations: [] };
+      }
+      
+      try {
+        const response = await apiRequest(
+          'GET', 
+          `/api/recommendations?animeIds=${highlyRatedAnimeIds.join(',')}&limit=10`
+        );
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        return { recommendations: [] };
+      }
+    },
+    enabled: highlyRatedAnimeIds.length > 0,
+  });
   
   // If the user hasn't rated enough animes yet, show a message
   if (userRatings.filter(r => r.overallRating >= 3.5).length === 0) {
@@ -102,7 +130,7 @@ export const AnimeRecommendations: React.FC<AnimeRecommendationsProps> = ({
       </h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {data.recommendations.map((anime) => (
+        {data.recommendations.map((anime: AnimeSearchResult) => (
           <Card 
             key={anime.mal_id} 
             className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
