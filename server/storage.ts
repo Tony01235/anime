@@ -111,8 +111,25 @@ export class FileStorage implements IStorage {
         updatedAt: new Date().toISOString()
       };
 
-      this.ratings[rating.id] = newRating;
-      await writeJsonFile(RATINGS_FILE, {ratings: this.ratings});
+      // Aktuelle Bewertungen laden
+      let currentRatings = [];
+      if (fs.existsSync(RATINGS_FILE)) {
+        const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
+        const data = JSON.parse(fileContent);
+        currentRatings = data.ratings || [];
+      }
+
+      // Prüfen ob Bewertung bereits existiert
+      const index = currentRatings.findIndex((r: AnimeRating) => r.id === rating.id);
+      if (index !== -1) {
+        currentRatings[index] = newRating;
+      } else {
+        currentRatings.push(newRating);
+      }
+
+      // Speichern der aktualisierten Bewertungen
+      await writeJsonFile(RATINGS_FILE, { ratings: currentRatings });
+      console.log(`Saved rating for anime ${rating.id}`);
       return newRating;
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -122,21 +139,25 @@ export class FileStorage implements IStorage {
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      // Synchrones Lesen der Datei
-      let ratings: AnimeRating[] = [];
-      
-      if (fs.existsSync(RATINGS_FILE)) {
-        const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
-        const data = JSON.parse(fileContent);
-        
-        if (data && Array.isArray(data.ratings)) {
-          ratings = data.ratings;
-        }
+      // Prüfen ob Datei existiert
+      if (!fs.existsSync(RATINGS_FILE)) {
+        console.log("Creating new ratings file");
+        await writeJsonFile(RATINGS_FILE, { ratings: [] });
+        return [];
       }
+
+      // Datei lesen
+      const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
+      const data = JSON.parse(fileContent);
       
-      console.log(`Loaded ${ratings.length} ratings successfully`);
-      return ratings;
-      
+      if (!data || !Array.isArray(data.ratings)) {
+        console.log("Initializing empty ratings array");
+        await writeJsonFile(RATINGS_FILE, { ratings: [] });
+        return [];
+      }
+
+      console.log(`Loaded ${data.ratings.length} ratings successfully`);
+      return data.ratings;
     } catch (error) {
       console.error("Error getting ratings:", error);
       return [];
