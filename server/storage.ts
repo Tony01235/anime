@@ -1,14 +1,10 @@
-import { users, type User, type InsertUser } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
+import { AnimeRating, User, InsertUser } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
-  // Rating methods
   saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating>;
   getRatings(userId: number): Promise<AnimeRating[]>;
   deleteRating(id: string, userId: number): Promise<boolean>;
@@ -16,7 +12,7 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private ratings: Map<string, AnimeRating>;
+  private ratings: Map<number, Map<string, AnimeRating>>;
   currentId: number;
 
   constructor() {
@@ -25,19 +21,28 @@ export class MemStorage implements IStorage {
     this.currentId = 1;
   }
 
+  private ensureUserRatings(userId: number) {
+    if (!this.ratings.has(userId)) {
+      this.ratings.set(userId, new Map());
+    }
+    return this.ratings.get(userId)!;
+  }
+
   async saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating> {
     try {
-      this.ratings.set(rating.id, rating);
+      const userRatings = this.ensureUserRatings(userId);
+      userRatings.set(rating.id, { ...rating });
       return rating;
     } catch (error) {
       console.error("Storage error while saving rating:", error);
-      throw error;
+      throw new Error("Failed to save rating");
     }
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      return Array.from(this.ratings.values());
+      const userRatings = this.ratings.get(userId);
+      return userRatings ? Array.from(userRatings.values()) : [];
     } catch (error) {
       console.error("Storage error while fetching ratings:", error);
       return [];
@@ -46,7 +51,8 @@ export class MemStorage implements IStorage {
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
     try {
-      return this.ratings.delete(id);
+      const userRatings = this.ratings.get(userId);
+      return userRatings ? userRatings.delete(id) : false;
     } catch (error) {
       console.error("Storage error while deleting rating:", error);
       return false;
@@ -59,7 +65,7 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+      (user) => user.username === username
     );
   }
 
