@@ -73,7 +73,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
   };
 
   const renderStar = (starIndex: number) => {
-    const currentRating = hoverRating || rating;
+    // Sicherstellen, dass wenn rating 0 ist, keine Sterne hervorgehoben werden
+    const currentRating = hoverRating || (rating > 0 ? rating : 0);
     const starValue = starIndex + 1;
     const isActive = currentRating >= starValue;
     const isHalfActive = 

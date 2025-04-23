@@ -133,8 +133,8 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
       <DialogContent className="bg-white dark:bg-sakura-800 max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader className="bg-sakura-100 dark:bg-sakura-900 px-6 py-4 flex justify-between items-center border-b border-sakura-200 dark:border-sakura-700">
           <DialogTitle className="text-xl font-bold text-sakura-600 dark:text-sakura-300">Anime bewerten</DialogTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-sakura-300 dark:hover:text-sakura-100">
-            <X className="h-5 w-5" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="rounded-full w-8 h-8 p-0 text-gray-500 hover:text-gray-700 dark:text-sakura-300 dark:hover:text-sakura-100">
+            <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
         
