@@ -86,6 +86,7 @@ export const calculateOverallRating = (
     count = values.length; // Anzahl aller Kategorien
   }
   
-  // Scale from 0-10 to 0-5 for overall rating
-  return count > 0 ? (sum / count) / 2 : 0;
+  // Scale from 0-10 to 0-5 for overall rating and round to nearest 0.5
+  const rating = count > 0 ? (sum / count) / 2 : 0;
+  return Math.round(rating * 2) / 2; // Runde auf nächste 0.5
 };
