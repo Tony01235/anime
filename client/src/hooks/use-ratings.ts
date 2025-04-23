@@ -21,22 +21,38 @@ export const useLocalStorage = () => {
   }, []);
 
   const fetchRatings = async () => {
-    toast({
-      title: "Lade Bewertungen",
-      description: "Deine Bewertungen werden geladen...",
-    });
-    
     try {
       const response = await fetch('/api/ratings');
-      if (!response.ok) throw new Error('Failed to fetch ratings');
-      const data = await response.json();
-      setRatings(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const text = await response.text(); // Erst als Text lesen
+      console.log("Raw response:", text); // Log der rohen Antwort
       
-      toast({
-        title: "Bewertungen geladen",
-        description: `${data.length} Bewertungen erfolgreich geladen.`,
-        variant: "default"
-      });
+      if (!text) {
+        console.log("Empty response received");
+        setRatings([]);
+        return;
+      }
+
+      const data = JSON.parse(text);
+      console.log("Parsed data:", data); // Log der geparsten Daten
+      
+      if (Array.isArray(data)) {
+        setRatings(data);
+        toast({
+          title: "Bewertungen geladen",
+          description: `${data.length} Bewertungen erfolgreich geladen.`,
+          variant: "default"
+        });
+      } else {
+        console.error("Unexpected data format:", data);
+        toast({
+          title: "Fehler beim Laden der Bewertungen",
+          description: "Unerwartetes Datenformat vom Server erhalten.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error('Error loading ratings:', error);
       toast({
