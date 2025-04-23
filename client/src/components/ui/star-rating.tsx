@@ -47,6 +47,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
     // Calculate the precise rating based on cursor position
     let value: number;
     if (precision === 0.5) {
+      // Für halbe Sterne: < 0.5 = halber Stern, > 0.5 = ganzer Stern
       value = percent <= 0.5 ? starIndex + 0.5 : starIndex + 1;
     } else {
       value = starIndex + 1;
@@ -60,16 +61,38 @@ export const StarRating: React.FC<StarRatingProps> = ({
     setHoverRating(0);
   };
 
-  const handleClick = (value: number) => {
+  const handleClick = (value: number, e?: React.MouseEvent<HTMLDivElement>) => {
     if (readOnly) return;
     
-    // Wenn der gleiche Stern erneut angeklickt wird, setze Bewertung auf 0 zurück
-    const newRating = rating === value ? 0 : value;
+    // Halbe-Stern-Logik
+    let newRating = value;
+    
+    // Wenn precision 0.5 ist und das vorherige Rating + 0.5 dem aktuellen Wert entspricht,
+    // setze auf den vollen Stern, sonst setze auf den halben Stern
+    if (precision === 0.5) {
+      if (rating === value - 0.5) {
+        // Wir hatten vorher einen halben Stern, jetzt vollen Stern
+        newRating = value;
+      } else if (rating === value) {
+        // Wir hatten vorher einen vollen Stern, jetzt zurücksetzen (0)
+        newRating = 0;
+      } else {
+        // Wir hatten etwas anderes, jetzt halber Stern
+        newRating = value - 0.5;
+      }
+    }
+    
+    // Bei precision 1.0 (ganze Sterne)
+    if (precision === 1 && rating === newRating) {
+      newRating = 0;
+    }
+    
     setRating(newRating);
     // Setze unmittelbar hoverRating auch auf 0 beim Zurücksetzen
     if (newRating === 0) {
       setHoverRating(0);
     }
+    
     onChange?.(newRating);
   };
 
@@ -121,7 +144,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
         <div
           key={i}
           className={cn('cursor-pointer', { 'cursor-default': readOnly })}
-          onClick={() => handleClick(i + 1)}
+          onClick={(e) => handleClick(i + 1, e)}
           onMouseMove={(e) => handleMouseMove(e, i)}
         >
           {renderStar(i)}
