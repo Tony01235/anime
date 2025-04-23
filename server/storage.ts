@@ -52,8 +52,26 @@ export class FileStorage implements IStorage {
   currentId: number;
 
   constructor() {
-    this.ratings = readJsonFile(RATINGS_FILE);
-    this.users = readJsonFile(USERS_FILE);
+    // Initialize empty objects if files don't exist
+    this.ratings = {};
+    this.users = {};
+    
+    try {
+      if (fs.existsSync(RATINGS_FILE)) {
+        this.ratings = readJsonFile(RATINGS_FILE);
+      } else {
+        writeJsonFile(RATINGS_FILE, {});
+      }
+      
+      if (fs.existsSync(USERS_FILE)) {
+        this.users = readJsonFile(USERS_FILE);
+      } else {
+        writeJsonFile(USERS_FILE, {});
+      }
+    } catch (error) {
+      console.error('Error initializing storage:', error);
+    }
+    
     this.currentId = Math.max(0, ...Object.keys(this.users).map(Number)) + 1;
   }
 
@@ -73,7 +91,16 @@ export class FileStorage implements IStorage {
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
-    return Object.values(this.ratings);
+    try {
+      // Reload ratings from file to ensure we have the latest data
+      if (fs.existsSync(RATINGS_FILE)) {
+        this.ratings = readJsonFile(RATINGS_FILE);
+      }
+      return Object.values(this.ratings) || [];
+    } catch (error) {
+      console.error('Error getting ratings:', error);
+      return [];
+    }
   }
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
