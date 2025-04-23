@@ -2,11 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import axios from "axios";
-import { apiResponseSchema, animeDetailSchema, animeRatingSchema } from "@shared/schema";
+import { apiResponseSchema, animeDetailSchema, animeRatingSchema, animeSearchResultSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 
+// API Constants
 const JIKAN_API_BASE_URL = "https://api.jikan.moe/v4";
+const ANILIST_API_URL = "https://graphql.anilist.co";
 
 // Add delay to avoid rate limiting
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -72,6 +74,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching anime details:", error);
       
       if (error instanceof ZodError) {
+        return res.status(500).json({ message: "Invalid API response format", error: error.message });
+      }
+      
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message;
+        return res.status(status).json({ message });
+      }
+      
+      res.status(500).json({ message: "Failed to fetch anime details" });
+    }
+  });
+
+  // Get anime recommendations from AniList API
+  app.get("/api/recommendations", async (req, res) => {
+    try {
+      const { animeIds, limit = "10" } = req.query;
+      
+      if (!animeIds || typeof animeIds !== "string") {
+        return res.status(400).json({ message: "animeIds parameter is required" });
+      }
+      
+      const malIds = animeIds.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      
+      if (malIds.length === 0) {
+        return res.status(400).json({ message: "No valid anime IDs provided" });
+      }
+      
+      // Convert MAL IDs to titles for AniList search
+      const titlesPromises = malIds.map(async (id) => {
+        try {
+          const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}`);
+          return response.data.data.title;
+        } catch (error) {
+          console.error(`Error fetching title for anime ID ${id}:`, error);
+          return null;
+        }
+      });
+      
+      // Add delays between requests to avoid rate limiting
+      const titles = (await Promise.all(titlesPromises)).filter(Boolean);
+      
+      if (titles.length === 0) {
+        return res.status(404).json({ message: "Could not find titles for any of the provided anime IDs" });
+      }
+      
+      // Get recommendations using AniList GraphQL API
+      const query = `
+        query ($search: String) {
+          Page(page: 1, perPage: ${limit}) {
+            media(type: ANIME, search: $search) {
+              id
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              coverImage {
+                large
+                medium
+              }
+              bannerImage
+              format
+              status
+              episodes
+              genres
+              averageScore
+              description
+              startDate {
+                year
+              }
+              studios {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+        }
+      `;
+      
+      // Use the first title to search for related anime
+      const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+      
+      const anilistResponse = await axios.post(ANILIST_API_URL, {
+        query,
+        variables: {
+          search: randomTitle
+        }
+      });
+      
+      // Convert AniList response to Jikan format for compatibility
+      const anilistData = anilistResponse.data.data.Page.media;
+      
+      // Map AniList data to Jikan format
+      const recommendations = anilistData
+        .filter((anime: any) => anime.idMal && !malIds.includes(anime.idMal))
+        .slice(0, parseInt(limit as string))
+        .map((anime: any) => ({
+          mal_id: anime.idMal,
+          title: anime.title.english || anime.title.romaji,
+          images: {
+            jpg: {
+              image_url: anime.coverImage.medium,
+              small_image_url: anime.coverImage.medium,
+              large_image_url: anime.coverImage.large
+            }
+          },
+          type: anime.format,
+          episodes: anime.episodes,
+          year: anime.startDate?.year,
+          score: anime.averageScore / 10, // AniList uses 100 scale, MAL uses 10
+          synopsis: anime.description,
+          studios: anime.studios?.nodes?.map((studio: any) => ({ name: studio.name })) || [],
+          aired: {
+            from: anime.startDate ? `${anime.startDate.year}-01-01` : null
+          },
+          genres: anime.genres?.map((genre: any) => ({ name: genre })) || []
+        }));
+      
+      // Validate with our schema
+      const validatedRecommendations = recommendations.map((rec: any) => animeSearchResultSchema.parse(rec));
+      
+      res.json({ recommendations: validatedRecommendations });
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      
+      if (error instanceof ZodError) {
+        return res.status(500).json({ message: "Invalid API response format", error: error.message });
+      }
+      
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message;
+        return res.status(status).json({ message });
+      }
+      
+      res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
 
   // Save or update rating
   app.post("/api/ratings", async (req, res) => {
@@ -85,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const rating = {
         ...ratingData,
-        createdAt: new Date().toISOString(),
+        createdAt: ratingData.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
@@ -126,19 +269,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting rating:", error);
       res.status(500).json({ message: "Failed to delete rating" });
-    }
-  });
-
-        return res.status(500).json({ message: "Invalid API response format", error: error.message });
-      }
-      
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status || 500;
-        const message = error.response?.data?.message || error.message;
-        return res.status(status).json({ message });
-      }
-      
-      res.status(500).json({ message: "Failed to fetch anime details" });
     }
   });
 
