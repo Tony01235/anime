@@ -66,6 +66,10 @@ export const StarRating: React.FC<StarRatingProps> = ({
     // Wenn der gleiche Stern erneut angeklickt wird, setze Bewertung auf 0 zurück
     const newRating = rating === value ? 0 : value;
     setRating(newRating);
+    // Setze unmittelbar hoverRating auch auf 0 beim Zurücksetzen
+    if (newRating === 0) {
+      setHoverRating(0);
+    }
     onChange?.(newRating);
   };
 

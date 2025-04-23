@@ -233,7 +233,7 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
           <Button 
             variant="ghost" 
             onClick={onClose}
-            className="text-gray-600 dark:text-sakura-100 hover:text-gray-800 dark:hover:text-white"
+            className="text-sakura-500 dark:text-sakura-300 hover:text-sakura-700 dark:hover:text-sakura-100 border border-sakura-200 dark:border-sakura-700"
           >
             Abbrechen
           </Button>
