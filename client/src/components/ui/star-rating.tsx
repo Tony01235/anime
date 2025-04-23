@@ -33,6 +33,11 @@ export const StarRating: React.FC<StarRatingProps> = ({
     setRating(initialRating);
   }, [initialRating]);
 
+  // Force update of the UI when rating changes
+  useEffect(() => {
+    setHoverRating(0);
+  }, [rating]);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, starIndex: number) => {
     if (readOnly) return;
     
