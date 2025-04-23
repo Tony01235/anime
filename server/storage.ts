@@ -24,12 +24,22 @@ const initializeJsonFile = (filePath: string) => {
 
 const readJsonFile = (filePath: string) => {
   try {
-    initializeJsonFile(filePath);
+    if (!fs.existsSync(filePath)) {
+      console.log(`File ${filePath} does not exist, creating...`);
+      fs.writeFileSync(filePath, JSON.stringify({ ratings: {} }), 'utf-8');
+      return { ratings: {} };
+    }
     const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data || '{}');
+    if (!data || data.trim() === '') {
+      console.log(`File ${filePath} is empty, initializing...`);
+      const initialData = { ratings: {} };
+      fs.writeFileSync(filePath, JSON.stringify(initialData), 'utf-8');
+      return initialData;
+    }
+    return JSON.parse(data);
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error);
-    return {};
+    return { ratings: {} };
   }
 };
 
@@ -112,7 +122,15 @@ export class FileStorage implements IStorage {
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      this.ratings = readJsonFile(RATINGS_FILE).ratings || {};
+      const data = readJsonFile(RATINGS_FILE);
+      if (!data || !data.ratings) {
+        console.log("Initializing empty ratings");
+        this.ratings = {};
+        await writeJsonFile(RATINGS_FILE, { ratings: {} });
+        return [];
+      }
+      this.ratings = data.ratings;
+      console.log("Loaded ratings:", Object.values(this.ratings));
       return Object.values(this.ratings);
     } catch (error) {
       console.error("Error getting ratings:", error);
