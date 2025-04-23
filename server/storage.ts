@@ -9,12 +9,23 @@ const RATINGS_FILE = path.join(__dirname, "ratings.json");
 const USERS_FILE = path.join(__dirname, "users.json");
 
 // Hilfsfunktionen zum Lesen und Schreiben der Dateien
-const readJsonFile = (filePath: string) => {
+const initializeJsonFile = (filePath: string) => {
   try {
     if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, JSON.stringify({}));
-      return {};
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(filePath, JSON.stringify({}), 'utf-8');
     }
+  } catch (error) {
+    console.error(`Error initializing file ${filePath}:`, error);
+  }
+};
+
+const readJsonFile = (filePath: string) => {
+  try {
+    initializeJsonFile(filePath);
     const data = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(data || '{}');
   } catch (error) {
@@ -25,11 +36,11 @@ const readJsonFile = (filePath: string) => {
 
 const writeJsonFile = (filePath: string, data: any) => {
   try {
-    const dirPath = path.dirname(filePath);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (error) {
     console.error(`Error writing file ${filePath}:`, error);
@@ -52,64 +63,58 @@ export class FileStorage implements IStorage {
   currentId: number;
 
   constructor() {
-    // Initialize empty objects if files don't exist
-    this.ratings = {};
-    this.users = {};
-    
-    try {
-      if (fs.existsSync(RATINGS_FILE)) {
-        this.ratings = readJsonFile(RATINGS_FILE);
-      } else {
-        writeJsonFile(RATINGS_FILE, {});
-      }
-      
-      if (fs.existsSync(USERS_FILE)) {
-        this.users = readJsonFile(USERS_FILE);
-      } else {
-        writeJsonFile(USERS_FILE, {});
-      }
-    } catch (error) {
-      console.error('Error initializing storage:', error);
-    }
+    // Initialize files
+    initializeJsonFile(RATINGS_FILE);
+    initializeJsonFile(USERS_FILE);
+
+    // Load data
+    this.ratings = readJsonFile(RATINGS_FILE);
+    this.users = readJsonFile(USERS_FILE);
     
     this.currentId = Math.max(0, ...Object.keys(this.users).map(Number)) + 1;
   }
 
   async saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating> {
-    if (!rating || !rating.id) {
-      throw new Error("Rating data is invalid");
+    try {
+      if (!rating || !rating.id) {
+        throw new Error("Rating data is invalid");
+      }
+
+      const newRating = {
+        ...rating,
+        updatedAt: new Date().toISOString()
+      };
+
+      this.ratings[rating.id] = newRating;
+      await writeJsonFile(RATINGS_FILE, this.ratings);
+      return newRating;
+    } catch (error) {
+      console.error("Error saving rating:", error);
+      throw error;
     }
-
-    const newRating = {
-      ...rating,
-      updatedAt: new Date().toISOString()
-    };
-
-    this.ratings[rating.id] = newRating;
-    writeJsonFile(RATINGS_FILE, this.ratings);
-    return newRating;
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      // Reload ratings from file to ensure we have the latest data
-      if (fs.existsSync(RATINGS_FILE)) {
-        this.ratings = readJsonFile(RATINGS_FILE);
-      }
-      return Object.values(this.ratings) || [];
+      this.ratings = readJsonFile(RATINGS_FILE);
+      return Object.values(this.ratings);
     } catch (error) {
-      console.error('Error getting ratings:', error);
+      console.error("Error getting ratings:", error);
       return [];
     }
   }
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
-    if (this.ratings[id]) {
-      delete this.ratings[id];
-      writeJsonFile(RATINGS_FILE, this.ratings);
-      return true;
+    try {
+      if (this.ratings[id]) {
+        delete this.ratings[id];
+        return writeJsonFile(RATINGS_FILE, this.ratings);
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting rating:", error);
+      return false;
     }
-    return false;
   }
 
   async getUser(id: number): Promise<User | undefined> {
