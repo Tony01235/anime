@@ -7,6 +7,11 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Rating methods
+  saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating>;
+  getRatings(userId: number): Promise<AnimeRating[]>;
+  deleteRating(id: string, userId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {

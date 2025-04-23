@@ -2,6 +2,20 @@ import { pgTable, text, serial, integer, jsonb, timestamp } from "drizzle-orm/pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Ratings table schema
+export const ratings = pgTable("ratings", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  animeId: integer("anime_id").notNull(),
+  animeTitle: text("anime_title").notNull(),
+  animeImage: text("anime_image").notNull(),
+  categories: jsonb("categories").notNull(),
+  overallRating: integer("overall_rating").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
 // Base user schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

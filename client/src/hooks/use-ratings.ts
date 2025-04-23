@@ -1,45 +1,54 @@
+
 import { useState, useEffect } from 'react';
 import { AnimeRating } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-
-const STORAGE_KEY = 'anime-sakura-ratings';
 
 export const useLocalStorage = () => {
   const [ratings, setRatings] = useState<AnimeRating[]>([]);
   const { toast } = useToast();
 
-  // Load ratings from localStorage on component mount
+  // Load ratings from server
   useEffect(() => {
+    fetchRatings();
+  }, []);
+
+  const fetchRatings = async () => {
     try {
-      const storedRatings = localStorage.getItem(STORAGE_KEY);
-      if (storedRatings) {
-        setRatings(JSON.parse(storedRatings));
-      }
+      const response = await fetch('/api/ratings');
+      if (!response.ok) throw new Error('Failed to fetch ratings');
+      const data = await response.json();
+      setRatings(data);
     } catch (error) {
-      console.error('Error loading ratings from localStorage:', error);
+      console.error('Error loading ratings:', error);
       toast({
         title: "Fehler beim Laden der Bewertungen",
         description: "Deine Bewertungen konnten nicht geladen werden. Bitte versuche es später erneut.",
         variant: "destructive"
       });
     }
-  }, []);
+  };
 
-  // Save a new rating or update an existing one
-  const saveRating = (rating: AnimeRating) => {
+  const saveRating = async (rating: AnimeRating) => {
     try {
+      const response = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rating)
+      });
+      
+      if (!response.ok) throw new Error('Failed to save rating');
+      const savedRating = await response.json();
+      
       const updatedRatings = [...ratings];
       const existingIndex = updatedRatings.findIndex(r => r.id === rating.id);
       
       if (existingIndex >= 0) {
-        updatedRatings[existingIndex] = rating;
+        updatedRatings[existingIndex] = savedRating;
       } else {
-        updatedRatings.push(rating);
+        updatedRatings.push(savedRating);
       }
       
       setRatings(updatedRatings);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRatings));
-      
       return true;
     } catch (error) {
       console.error('Error saving rating:', error);
@@ -52,12 +61,15 @@ export const useLocalStorage = () => {
     }
   };
 
-  // Delete a rating
-  const deleteRating = (id: string) => {
+  const deleteRating = async (id: string) => {
     try {
-      const updatedRatings = ratings.filter(rating => rating.id !== id);
-      setRatings(updatedRatings);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRatings));
+      const response = await fetch(`/api/ratings/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete rating');
+      
+      setRatings(ratings.filter(rating => rating.id !== id));
       return true;
     } catch (error) {
       console.error('Error deleting rating:', error);
@@ -70,7 +82,6 @@ export const useLocalStorage = () => {
     }
   };
 
-  // Get a specific rating by anime ID
   const getRatingByAnimeId = (animeId: number) => {
     return ratings.find(rating => rating.animeId === animeId) || null;
   };

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import axios from "axios";
-import { apiResponseSchema, animeDetailSchema } from "@shared/schema";
+import { apiResponseSchema, animeDetailSchema, animeRatingSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -72,6 +72,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching anime details:", error);
       
       if (error instanceof ZodError) {
+
+  // Save or update rating
+  app.post("/api/ratings", async (req, res) => {
+    try {
+      const userId = 1; // TODO: Get from auth
+      const rating = animeRatingSchema.parse(req.body);
+      const savedRating = await storage.saveRating(rating, userId);
+      res.json(savedRating);
+    } catch (error) {
+      console.error("Error saving rating:", error);
+      res.status(500).json({ message: "Failed to save rating" });
+    }
+  });
+
+  // Get user ratings
+  app.get("/api/ratings", async (req, res) => {
+    try {
+      const userId = 1; // TODO: Get from auth
+      const ratings = await storage.getRatings(userId);
+      res.json(ratings);
+    } catch (error) {
+      console.error("Error fetching ratings:", error);
+      res.status(500).json({ message: "Failed to fetch ratings" });
+    }
+  });
+
+  // Delete rating
+  app.delete("/api/ratings/:id", async (req, res) => {
+    try {
+      const userId = 1; // TODO: Get from auth
+      const { id } = req.params;
+      const success = await storage.deleteRating(id, userId);
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ message: "Rating not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting rating:", error);
+      res.status(500).json({ message: "Failed to delete rating" });
+    }
+  });
+
         return res.status(500).json({ message: "Invalid API response format", error: error.message });
       }
       
