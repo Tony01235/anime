@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Switch, Route } from "wouter";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
@@ -14,21 +12,11 @@ import AnimeRatingModal from "@/components/anime-rating-modal";
 import { useQueryRatings } from "@/hooks/use-query-ratings";
 
 function App() {
-  // No hooks here - just wrapping with the provider
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
-  );
-}
-
-// Hooks are used in this component, after the QueryClientProvider
-function AppContent() {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [selectedAnime, setSelectedAnime] = useState<any | null>(null);
   const [currentRating, setCurrentRating] = useState<AnimeRating | null>(null);
   
-  // Now we can use hooks that depend on the QueryClient
+  // Use the query ratings hook directly
   const { ratings, saveRating, deleteRating } = useQueryRatings();
 
   const openRatingModal = (anime: any, existingRating?: AnimeRating) => {
