@@ -92,9 +92,13 @@ export const useQueryRatings = () => {
       }
       return id;
     },
-    onSuccess: () => {
-      // Invalidiere den Query-Cache, um die neuen Daten zu laden
-      queryClient.invalidateQueries({ queryKey: [RATINGS_QUERY_KEY] });
+    onSuccess: (deletedId) => {
+      // Manuelles Update des Cache anstelle von Invalidierung, um mehrfache Netzwerkanfragen zu vermeiden
+      queryClient.setQueriesData({ queryKey: [RATINGS_QUERY_KEY] }, (oldData: AnimeRating[] | undefined) => {
+        if (!oldData) return [];
+        // Filtere die gelöschte Bewertung aus dem Cache
+        return oldData.filter(rating => rating.id !== deletedId);
+      });
       
       toast({
         title: "Bewertung gelöscht",
