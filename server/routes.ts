@@ -65,12 +65,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Anime ID is required" });
       }
 
-      // Add a small delay to avoid rate limiting
-      await delay(300);
+      // Add a longer delay to avoid rate limiting
+      await delay(1000);
 
-      const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}/full`);
+      let animeData;
       
-      const validatedData = animeDetailSchema.parse(response.data.data);
+      try {
+        const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}/full`);
+        animeData = response.data.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.log("Rate limited by Jikan API, retrying with longer delay...");
+          // Add even longer delay on rate limit
+          await delay(2000);
+          const retryResponse = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}/full`);
+          animeData = retryResponse.data.data;
+        } else {
+          throw error;
+        }
+      }
+      
+      // Validate data format
+      const validatedData = animeDetailSchema.parse(animeData);
       res.json(validatedData);
     } catch (error) {
       console.error("Error fetching anime details:", error);
