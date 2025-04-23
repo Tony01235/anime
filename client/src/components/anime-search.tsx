@@ -42,6 +42,8 @@ const AnimeSearch: React.FC<AnimeSearchProps> = ({ onAnimeSelect }) => {
           placeholder="Anime suchen..." 
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
+          autoComplete="off"
+          autoFocus={false}
           className="px-6 py-6 rounded-full border-sakura-200 dark:border-sakura-700 shadow-[0_4px_15px_rgba(255,146,165,0.3)] dark:shadow-[0_4px_15px_rgba(160,100,220,0.3)] focus:border-sakura-300 dark:focus:border-sakura-600"
         />
         <Button 

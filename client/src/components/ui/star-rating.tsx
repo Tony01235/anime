@@ -57,8 +57,11 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
   const handleClick = (value: number) => {
     if (readOnly) return;
-    setRating(value);
-    onChange?.(value);
+    
+    // Wenn der gleiche Stern erneut angeklickt wird, setze Bewertung auf 0 zurück
+    const newRating = rating === value ? 0 : value;
+    setRating(newRating);
+    onChange?.(newRating);
   };
 
   const getStarSize = () => {
@@ -79,7 +82,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
     
     if (isHalfActive) {
       return (
-        <div className="relative" key={`star-${starIndex}`}>
+        <div className="relative">
           <Star className={cn(getStarSize(), colorEmpty)} />
           <div className="absolute top-0 left-0 overflow-hidden w-1/2">
             <Star className={cn(getStarSize(), colorFilled)} />
@@ -90,7 +93,6 @@ export const StarRating: React.FC<StarRatingProps> = ({
     
     return (
       <Star 
-        key={`star-${starIndex}`}
         className={cn(
           getStarSize(),
           isActive ? colorFilled : colorEmpty,

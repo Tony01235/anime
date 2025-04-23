@@ -211,7 +211,8 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
                   </Label>
                   <Textarea 
                     id="ratingNotes" 
-                    rows={3} 
+                    rows={3}
+                    autoFocus={false}
                     className="w-full rounded-md border border-sakura-200 dark:border-sakura-700 bg-white dark:bg-sakura-900 p-3 text-gray-700 dark:text-sakura-100 focus:border-sakura-400 dark:focus:border-sakura-600 focus:outline-none"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
