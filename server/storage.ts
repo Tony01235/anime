@@ -19,6 +19,8 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.ratings = new Map();
     this.currentId = 1;
+    // Initialize ratings for default user
+    this.ratings.set(1, new Map());
   }
 
   private ensureUserRatings(userId: number) {
@@ -29,24 +31,27 @@ export class MemStorage implements IStorage {
   }
 
   async saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating> {
-    try {
-      const userRatings = this.ensureUserRatings(userId);
-      userRatings.set(rating.id, { ...rating });
-      return rating;
-    } catch (error) {
-      console.error("Storage error while saving rating:", error);
-      throw new Error("Failed to save rating");
+    if (!rating || !rating.id) {
+      throw new Error("Invalid rating data");
     }
+    
+    const userRatings = this.ensureUserRatings(userId);
+    const savedRating = { ...rating, updatedAt: new Date().toISOString() };
+    userRatings.set(rating.id, savedRating);
+    return savedRating;
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
-    try {
-      const userRatings = this.ratings.get(userId);
-      return userRatings ? Array.from(userRatings.values()) : [];
-    } catch (error) {
-      console.error("Storage error while fetching ratings:", error);
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    
+    const userRatings = this.ratings.get(userId);
+    if (!userRatings) {
       return [];
     }
+    
+    return Array.from(userRatings.values());
   }
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
