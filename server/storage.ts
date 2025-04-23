@@ -2,9 +2,11 @@
 import { AnimeRating, User, InsertUser } from "@shared/schema";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from 'url';
 
-const RATINGS_FILE = new URL("ratings.json", import.meta.url).pathname;
-const USERS_FILE = new URL("users.json", import.meta.url).pathname;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const RATINGS_FILE = path.join(__dirname, "ratings.json");
+const USERS_FILE = path.join(__dirname, "users.json");
 
 // Hilfsfunktionen zum Lesen und Schreiben der Dateien
 const readJsonFile = (filePath: string) => {
@@ -13,7 +15,8 @@ const readJsonFile = (filePath: string) => {
       fs.writeFileSync(filePath, JSON.stringify({}));
       return {};
     }
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data || '{}');
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error);
     return {};
@@ -22,6 +25,10 @@ const readJsonFile = (filePath: string) => {
 
 const writeJsonFile = (filePath: string, data: any) => {
   try {
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     return true;
   } catch (error) {
