@@ -1,4 +1,3 @@
-
 import { AnimeRating, User, InsertUser } from "@shared/schema";
 import fs from "fs";
 import path from "path";
@@ -63,14 +62,31 @@ export class FileStorage implements IStorage {
   currentId: number;
 
   constructor() {
-    // Initialize files
-    initializeJsonFile(RATINGS_FILE);
-    initializeJsonFile(USERS_FILE);
+    try {
+      if (fs.existsSync(RATINGS_FILE)) {
+        const data = readJsonFile(RATINGS_FILE);
+        this.ratings = data.ratings || {};
+      } else {
+        this.ratings = {};
+        writeJsonFile(RATINGS_FILE, { ratings: {} });
+      }
+    } catch (error) {
+      console.error("Error initializing ratings:", error);
+      this.ratings = {};
+    }
 
-    // Load data
-    this.ratings = readJsonFile(RATINGS_FILE);
-    this.users = readJsonFile(USERS_FILE);
-    
+    try {
+      if (fs.existsSync(USERS_FILE)) {
+        this.users = readJsonFile(USERS_FILE);
+      } else {
+        this.users = {};
+        writeJsonFile(USERS_FILE, {});
+      }
+    } catch (error) {
+      console.error("Error initializing users:", error);
+      this.users = {};
+    }
+
     this.currentId = Math.max(0, ...Object.keys(this.users).map(Number)) + 1;
   }
 
@@ -86,7 +102,7 @@ export class FileStorage implements IStorage {
       };
 
       this.ratings[rating.id] = newRating;
-      await writeJsonFile(RATINGS_FILE, this.ratings);
+      await writeJsonFile(RATINGS_FILE, {ratings: this.ratings});
       return newRating;
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -96,7 +112,7 @@ export class FileStorage implements IStorage {
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      this.ratings = readJsonFile(RATINGS_FILE);
+      this.ratings = readJsonFile(RATINGS_FILE).ratings || {};
       return Object.values(this.ratings);
     } catch (error) {
       console.error("Error getting ratings:", error);
@@ -108,7 +124,7 @@ export class FileStorage implements IStorage {
     try {
       if (this.ratings[id]) {
         delete this.ratings[id];
-        return writeJsonFile(RATINGS_FILE, this.ratings);
+        return writeJsonFile(RATINGS_FILE, {ratings: this.ratings});
       }
       return false;
     } catch (error) {
