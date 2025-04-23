@@ -1,4 +1,3 @@
-
 import { AnimeRating, User, InsertUser } from "@shared/schema";
 
 export interface IStorage {
@@ -12,56 +11,35 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private ratings: Map<number, Map<string, AnimeRating>>;
+  private ratings: Map<string, AnimeRating>;
   currentId: number;
 
   constructor() {
     this.users = new Map();
     this.ratings = new Map();
     this.currentId = 1;
-    // Initialize ratings for default user
-    this.ratings.set(1, new Map());
-  }
-
-  private ensureUserRatings(userId: number) {
-    if (!this.ratings.has(userId)) {
-      this.ratings.set(userId, new Map());
-    }
-    return this.ratings.get(userId)!;
   }
 
   async saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating> {
     if (!rating || !rating.id) {
-      throw new Error("Invalid rating data");
+      throw new Error("Rating data is invalid");
     }
-    
-    const userRatings = this.ensureUserRatings(userId);
-    const savedRating = { ...rating, updatedAt: new Date().toISOString() };
-    userRatings.set(rating.id, savedRating);
-    return savedRating;
+
+    const newRating = {
+      ...rating,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.ratings.set(rating.id, newRating);
+    return newRating;
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-    
-    const userRatings = this.ratings.get(userId);
-    if (!userRatings) {
-      return [];
-    }
-    
-    return Array.from(userRatings.values());
+    return Array.from(this.ratings.values());
   }
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
-    try {
-      const userRatings = this.ratings.get(userId);
-      return userRatings ? userRatings.delete(id) : false;
-    } catch (error) {
-      console.error("Storage error while deleting rating:", error);
-      return false;
-    }
+    return this.ratings.delete(id);
   }
 
   async getUser(id: number): Promise<User | undefined> {

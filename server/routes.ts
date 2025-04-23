@@ -77,21 +77,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ratings", async (req, res) => {
     try {
       const userId = 1; // TODO: Get from auth
-      const rating = animeRatingSchema.parse(req.body);
+      const ratingData = animeRatingSchema.parse(req.body);
+      
+      if (!ratingData.id || !ratingData.animeId || !ratingData.animeTitle) {
+        return res.status(400).json({ message: "Missing required rating data" });
+      }
+
+      const rating = {
+        ...ratingData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
       const savedRating = await storage.saveRating(rating, userId);
       res.json(savedRating);
     } catch (error) {
       console.error("Error saving rating:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid rating data", 
-          errors: error.errors 
-        });
+        return res.status(400).json({ message: "Invalid rating data", errors: error.errors });
       }
-      res.status(500).json({ 
-        message: "Failed to save rating",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+      res.status(500).json({ message: "Failed to save rating" });
     }
   });
 
@@ -100,10 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = 1; // TODO: Get from auth
       const ratings = await storage.getRatings(userId);
-      if (!ratings) {
-        return res.json([]);
-      }
-      res.json(ratings);
+      res.json(ratings || []);
     } catch (error) {
       console.error("Error fetching ratings:", error);
       res.status(500).json({ message: "Failed to fetch ratings" });
