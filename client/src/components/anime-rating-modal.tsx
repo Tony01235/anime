@@ -13,9 +13,11 @@ import { Label } from '@/components/ui/label';
 import { SaveIcon, X } from 'lucide-react';
 import StarRating from '@/components/ui/star-rating';
 import { useToast } from '@/hooks/use-toast';
-import { AnimeDetail, AnimeRating, AnimeSearchResult, RatingCategory } from '@shared/schema';
-import { calculateOverallRating, generateId, extractYear } from '@/lib/utils';
+import { AnimeDetail, AnimeRating, AnimeSearchResult } from '@shared/schema';
+import { generateId, extractYear } from '@/lib/utils';
 import { useAnimeDetails } from '@/hooks/use-anime';
+import { useRatingCategories, calculateOverallRating, mapBaseCategoriesToRatingCategories } from '@/hooks/use-rating-categories';
+import { RatingCategory } from '@shared/schema';
 
 interface AnimeRatingModalProps {
   isOpen: boolean;
@@ -24,13 +26,6 @@ interface AnimeRatingModalProps {
   existingRating?: AnimeRating | null;
   onSave: (rating: AnimeRating) => void;
 }
-
-const defaultCategories = [
-  { name: 'Story', value: 0 },
-  { name: 'Animation', value: 0 },
-  { name: 'Charaktere', value: 0 },
-  { name: 'Musik', value: 0 }
-];
 
 const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
   isOpen,
@@ -41,37 +36,56 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
 }) => {
   const { toast } = useToast();
   const { data: animeDetails, isLoading } = useAnimeDetails(anime.mal_id);
+  const { data: categoriesData, isLoading: isLoadingCategories } = useRatingCategories();
   
-  const [categories, setCategories] = useState<RatingCategory[]>(
-    existingRating?.categories || defaultCategories
-  );
+  const [categories, setCategories] = useState<RatingCategory[]>([]);
   const [notes, setNotes] = useState<string>(existingRating?.notes || '');
   const [overallRating, setOverallRating] = useState<number>(
     existingRating?.overallRating || 0
   );
 
+  // Initialize or update categories when data is loaded
   useEffect(() => {
-    if (existingRating) {
-      setCategories(existingRating.categories);
-      setNotes(existingRating.notes || '');
-      setOverallRating(existingRating.overallRating);
-    } else {
-      setCategories(defaultCategories);
-      setNotes('');
-      setOverallRating(0);
+    if (categoriesData?.categories && categoriesData.categories.length > 0) {
+      if (existingRating) {
+        // When editing an existing rating, use the existing values
+        const existingValues: Record<string, number> = {};
+        existingRating.categories.forEach(cat => {
+          if ('id' in cat && 'value' in cat) {
+            existingValues[cat.id] = cat.value;
+          }
+        });
+        
+        // Map base categories to rating categories with values
+        const ratingCategories = mapBaseCategoriesToRatingCategories(
+          categoriesData.categories, 
+          existingValues
+        );
+        setCategories(ratingCategories);
+      } else {
+        // For a new rating, start with all zeroes
+        const ratingCategories = mapBaseCategoriesToRatingCategories(
+          categoriesData.categories
+        );
+        setCategories(ratingCategories);
+        setNotes('');
+        setOverallRating(0);
+      }
     }
-  }, [existingRating, isOpen]);
+  }, [categoriesData, existingRating, isOpen]);
 
   useEffect(() => {
     // Calculate overall rating when categories change
-    const categoryValues = categories.map(cat => cat.value);
-    const newOverall = calculateOverallRating(categoryValues);
+    const newOverall = calculateOverallRating(categories);
     setOverallRating(newOverall);
   }, [categories]);
 
   const handleCategoryRatingChange = (index: number, value: number) => {
     const updatedCategories = [...categories];
-    updatedCategories[index] = { ...updatedCategories[index], value };
+    updatedCategories[index] = { 
+      ...updatedCategories[index], 
+      value 
+    };
     setCategories(updatedCategories);
   };
 

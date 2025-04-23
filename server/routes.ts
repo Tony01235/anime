@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
 import { apiResponseSchema, animeDetailSchema, animeRatingSchema, animeSearchResultSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -156,13 +158,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       `;
       
-      // Use the first title to search for related anime
-      const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+      // Get genres of the rated animes to find similar ones
+      const genresPromises = malIds.map(async (id) => {
+        try {
+          const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}`);
+          // Extract genres from the anime
+          return response.data.data.genres?.map((g: any) => g.name) || [];
+        } catch (error) {
+          console.error(`Error fetching genres for anime ID ${id}:`, error);
+          return [];
+        }
+      });
+      
+      // Add delays between requests to avoid rate limiting
+      const genresArrays = (await Promise.all(genresPromises)).filter(arr => arr.length > 0);
+      
+      // Flatten and get unique genres
+      const allGenres = Array.from(new Set(genresArrays.flat()));
+      
+      // Choose a random genre if available, otherwise use a random title
+      let searchQuery;
+      if (allGenres.length > 0) {
+        const randomGenre = allGenres[Math.floor(Math.random() * allGenres.length)];
+        searchQuery = randomGenre; // Search by genre
+      } else {
+        // Fallback to title search if no genres available
+        searchQuery = titles[Math.floor(Math.random() * titles.length)];
+      }
+      
+      console.log("Using search query for recommendations:", searchQuery);
       
       const anilistResponse = await axios.post(ANILIST_API_URL, {
         query,
         variables: {
-          search: randomTitle
+          search: searchQuery
         }
       });
       
@@ -269,6 +298,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting rating:", error);
       res.status(500).json({ message: "Failed to delete rating" });
+    }
+  });
+
+  // Get rating categories from JSON file
+  app.get("/api/rating-categories", (req, res) => {
+    try {
+      const categoriesPath = path.join(__dirname, "rating-categories.json");
+      
+      if (!fs.existsSync(categoriesPath)) {
+        return res.status(404).json({ message: "Rating categories file not found" });
+      }
+      
+      const categoriesData = fs.readFileSync(categoriesPath, "utf-8");
+      const categories = JSON.parse(categoriesData);
+      
+      // Validate the format
+      if (!categories || !Array.isArray(categories.categories)) {
+        return res.status(500).json({ message: "Invalid rating categories format" });
+      }
+      
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching rating categories:", error);
+      res.status(500).json({ message: "Failed to fetch rating categories" });
     }
   });
 

@@ -1,4 +1,32 @@
-
 {
-  "ratings": []
+  "ratings": [
+    {
+      "id": "k1vdyre9osqwsv4oliupx",
+      "animeId": 21,
+      "animeTitle": "One Piece",
+      "animeImage": "https://cdn.myanimelist.net/images/anime/1244/138851l.jpg",
+      "categories": [
+        {
+          "name": "Story",
+          "value": 6.5
+        },
+        {
+          "name": "Animation",
+          "value": 10
+        },
+        {
+          "name": "Charaktere",
+          "value": 10
+        },
+        {
+          "name": "Musik",
+          "value": 10
+        }
+      ],
+      "overallRating": 4.5,
+      "notes": "",
+      "createdAt": "2025-04-23T21:29:55.948Z",
+      "updatedAt": "2025-04-23T21:29:56.075Z"
+    }
+  ]
 }

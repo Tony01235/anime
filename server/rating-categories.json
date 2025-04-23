@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "id": "story",
+      "name": "Geschichte",
+      "description": "Bewertung der Handlung, Storytelling und narrativer Struktur"
+    },
+    {
+      "id": "animation",
+      "name": "Animation",
+      "description": "Qualität der Animation, Kunst und visueller Effekte"
+    },
+    {
+      "id": "characters",
+      "name": "Charaktere",
+      "description": "Tiefe und Entwicklung der Charaktere"
+    },
+    {
+      "id": "sound",
+      "name": "Sound",
+      "description": "Musik, Soundeffekte und Synchronisation"
+    },
+    {
+      "id": "enjoyment",
+      "name": "Unterhaltung",
+      "description": "Wie unterhaltsam und fesselnd war der Anime insgesamt"
+    }
+  ]
+}

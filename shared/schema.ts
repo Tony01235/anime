@@ -31,12 +31,19 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Rating category schema
-export const ratingCategorySchema = z.object({
+// Rating category base schema (from the JSON file)
+export const ratingCategoryBaseSchema = z.object({
+  id: z.string(),
   name: z.string(),
+  description: z.string()
+});
+
+// Rating category with value schema (used in ratings)
+export const ratingCategorySchema = ratingCategoryBaseSchema.extend({
   value: z.number().min(0).max(10).step(0.5),
 });
 
+export type RatingCategoryBase = z.infer<typeof ratingCategoryBaseSchema>;
 export type RatingCategory = z.infer<typeof ratingCategorySchema>;
 
 // Anime rating schema
