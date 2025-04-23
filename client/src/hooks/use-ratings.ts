@@ -7,9 +7,17 @@ export const useLocalStorage = () => {
   const [ratings, setRatings] = useState<AnimeRating[]>([]);
   const { toast } = useToast();
 
-  // Load ratings from server
+  // Load ratings from server after page load
   useEffect(() => {
-    fetchRatings();
+    const loadRatings = () => {
+      // Warte bis die Seite vollständig geladen ist
+      if (document.readyState === 'complete') {
+        setTimeout(fetchRatings, 500);
+      } else {
+        window.addEventListener('load', () => setTimeout(fetchRatings, 500));
+      }
+    };
+    loadRatings();
   }, []);
 
   const fetchRatings = async () => {
