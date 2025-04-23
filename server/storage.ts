@@ -122,35 +122,21 @@ export class FileStorage implements IStorage {
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      // Prüfe ob die Datei existiert
-      if (!fs.existsSync(RATINGS_FILE)) {
-        console.log("Creating new ratings file");
-        await writeJsonFile(RATINGS_FILE, { ratings: [] });
-        return [];
-      }
-
-      // Lese die Datei
-      const data = await fs.promises.readFile(RATINGS_FILE, 'utf-8');
+      // Synchrones Lesen der Datei
+      let ratings: AnimeRating[] = [];
       
-      // Prüfe ob die Datei leer ist
-      if (!data || data.trim() === '') {
-        console.log("Empty ratings file, initializing");
-        await writeJsonFile(RATINGS_FILE, { ratings: [] });
-        return [];
+      if (fs.existsSync(RATINGS_FILE)) {
+        const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
+        const data = JSON.parse(fileContent);
+        
+        if (data && Array.isArray(data.ratings)) {
+          ratings = data.ratings;
+        }
       }
-
-      // Parse JSON
-      const parsedData = JSON.parse(data);
       
-      // Validiere Datenstruktur
-      if (!parsedData || !Array.isArray(parsedData.ratings)) {
-        console.log("Invalid ratings structure, resetting");
-        await writeJsonFile(RATINGS_FILE, { ratings: [] });
-        return [];
-      }
-
-      console.log("Successfully loaded ratings:", parsedData.ratings);
-      return parsedData.ratings;
+      console.log(`Loaded ${ratings.length} ratings successfully`);
+      return ratings;
+      
     } catch (error) {
       console.error("Error getting ratings:", error);
       return [];
