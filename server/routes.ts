@@ -304,20 +304,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get rating categories from JSON file
   app.get("/api/rating-categories", (req, res) => {
     try {
-      const categoriesPath = path.join(__dirname, "rating-categories.json");
+      // Versuchen wir einen absoluten Pfad
+      const categoriesPath = path.resolve("server/rating-categories.json");
+      
+      console.log("Trying to load categories from:", categoriesPath);
       
       if (!fs.existsSync(categoriesPath)) {
+        console.error("Categories file not found at:", categoriesPath);
         return res.status(404).json({ message: "Rating categories file not found" });
       }
       
       const categoriesData = fs.readFileSync(categoriesPath, "utf-8");
+      console.log("Categories data loaded:", categoriesData.substring(0, 50) + "...");
+      
       const categories = JSON.parse(categoriesData);
       
       // Validate the format
       if (!categories || !Array.isArray(categories.categories)) {
+        console.error("Invalid categories format:", categories);
         return res.status(500).json({ message: "Invalid rating categories format" });
       }
       
+      console.log("Successfully loaded categories:", categories.categories.length);
       res.json(categories);
     } catch (error) {
       console.error("Error fetching rating categories:", error);

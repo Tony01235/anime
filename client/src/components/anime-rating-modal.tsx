@@ -13,11 +13,14 @@ import { Label } from '@/components/ui/label';
 import { SaveIcon, X } from 'lucide-react';
 import StarRating from '@/components/ui/star-rating';
 import { useToast } from '@/hooks/use-toast';
-import { AnimeDetail, AnimeRating, AnimeSearchResult } from '@shared/schema';
+import { AnimeRating, AnimeSearchResult, RatingCategory } from '@shared/schema';
 import { generateId, extractYear } from '@/lib/utils';
 import { useAnimeDetails } from '@/hooks/use-anime';
-import { useRatingCategories, calculateOverallRating, mapBaseCategoriesToRatingCategories } from '@/hooks/use-rating-categories';
-import { RatingCategory } from '@shared/schema';
+import { 
+  useRatingCategories, 
+  calculateOverallRating,
+  mapBaseCategoriesToRatingCategories
+} from '@/hooks/use-rating-categories';
 
 interface AnimeRatingModalProps {
   isOpen: boolean;
@@ -185,25 +188,33 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
               <div className="space-y-4">
                 <h4 className="font-bold text-sakura-500 dark:text-sakura-300">Bewertungskategorien (0-10 Sterne)</h4>
                 
-                {categories.map((category, index) => (
-                  <div key={index} className="rating-category">
-                    <div className="flex justify-between mb-1">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-sakura-100">
-                        {category.name}
-                      </Label>
-                      <span className="text-sm text-sakura-500 dark:text-sakura-300">
-                        {category.value.toFixed(1)} / 10
-                      </span>
+                {isLoadingCategories ? (
+                  <div className="text-sakura-500 dark:text-sakura-300">Lade Kategorien...</div>
+                ) : categories.length === 0 ? (
+                  <div className="text-sakura-500 dark:text-sakura-300">Keine Kategorien gefunden</div>
+                ) : (
+                  categories.map((category, index) => (
+                    <div key={category.id} className="rating-category">
+                      <div className="flex justify-between mb-1">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-sakura-100">
+                          {category.name}
+                        </Label>
+                        <span className="text-sm text-sakura-500 dark:text-sakura-300">
+                          {category.value.toFixed(1)} / 10
+                        </span>
+                      </div>
+                      <div className="tooltip" title={category.description}>
+                        <StarRating 
+                          initialRating={category.value} 
+                          max={10}
+                          precision={0.5}
+                          onChange={(value) => handleCategoryRatingChange(index, value)}
+                          colorFilled="text-sakura-400 dark:text-sakura-500"
+                        />
+                      </div>
                     </div>
-                    <StarRating 
-                      initialRating={category.value} 
-                      max={10}
-                      precision={0.5}
-                      onChange={(value) => handleCategoryRatingChange(index, value)}
-                      colorFilled="text-sakura-400 dark:text-sakura-500"
-                    />
-                  </div>
-                ))}
+                  ))
+                )}
                 
                 {/* Overall Rating */}
                 <div className="mt-8 flex flex-col items-center">
