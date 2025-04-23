@@ -105,17 +105,17 @@ export const StarRating: React.FC<StarRatingProps> = ({
   };
 
   const renderStar = (starIndex: number) => {
-    // Sicherstellen, dass wenn rating 0 ist, keine Sterne hervorgehoben werden
     const currentRating = hoverRating || (rating > 0 ? rating : 0);
     const starValue = starIndex + 1;
     const isActive = currentRating >= starValue;
     const isHalfActive = 
       precision === 0.5 && 
-      currentRating === starIndex + 0.5;
-    
+      Math.ceil(currentRating) === starValue &&
+      currentRating % 1 !== 0;
+
     if (isHalfActive) {
       return (
-        <div className="relative">
+        <div className="relative inline-block">
           <Star className={cn(getStarSize(), colorEmpty)} />
           <div className="absolute top-0 left-0 overflow-hidden w-1/2">
             <Star className={cn(getStarSize(), colorFilled)} />
