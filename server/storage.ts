@@ -68,21 +68,26 @@ export interface IStorage {
 
 export class FileStorage implements IStorage {
   private users: { [key: number]: User };
-  private ratings: { [key: string]: AnimeRating };
+  private ratingsArray: AnimeRating[]; // Array of ratings instead of object
   currentId: number;
 
   constructor() {
+    // Initialize ratings as array
     try {
       if (fs.existsSync(RATINGS_FILE)) {
         const data = readJsonFile(RATINGS_FILE);
-        this.ratings = data.ratings || {};
+        this.ratingsArray = Array.isArray(data.ratings) ? data.ratings : [];
+        
+        // Log successful initialization
+        console.log(`Initialized with ${this.ratingsArray.length} ratings from file`);
       } else {
-        this.ratings = {};
-        writeJsonFile(RATINGS_FILE, { ratings: {} });
+        this.ratingsArray = [];
+        writeJsonFile(RATINGS_FILE, { ratings: [] });
+        console.log("Created new empty ratings file");
       }
     } catch (error) {
       console.error("Error initializing ratings:", error);
-      this.ratings = {};
+      this.ratingsArray = [];
     }
 
     try {
@@ -111,25 +116,21 @@ export class FileStorage implements IStorage {
         updatedAt: new Date().toISOString()
       };
 
-      // Aktuelle Bewertungen laden
-      let currentRatings = [];
-      if (fs.existsSync(RATINGS_FILE)) {
-        const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
-        const data = JSON.parse(fileContent);
-        currentRatings = data.ratings || [];
-      }
-
-      // Prüfen ob Bewertung bereits existiert
-      const index = currentRatings.findIndex((r: AnimeRating) => r.id === rating.id);
+      // Update in-memory array first
+      const index = this.ratingsArray.findIndex(r => r.id === rating.id);
       if (index !== -1) {
-        currentRatings[index] = newRating;
+        this.ratingsArray[index] = newRating;
       } else {
-        currentRatings.push(newRating);
+        this.ratingsArray.push(newRating);
       }
 
-      // Speichern der aktualisierten Bewertungen
-      await writeJsonFile(RATINGS_FILE, { ratings: currentRatings });
-      console.log(`Saved rating for anime ${rating.id}`);
+      // Save to file
+      const success = await writeJsonFile(RATINGS_FILE, { ratings: this.ratingsArray });
+      if (!success) {
+        throw new Error("Failed to write ratings to file");
+      }
+      
+      console.log(`Saved rating for anime ${rating.animeTitle} (ID: ${rating.id})`);
       return newRating;
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -139,25 +140,9 @@ export class FileStorage implements IStorage {
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
     try {
-      // Prüfen ob Datei existiert
-      if (!fs.existsSync(RATINGS_FILE)) {
-        console.log("Creating new ratings file");
-        await writeJsonFile(RATINGS_FILE, { ratings: [] });
-        return [];
-      }
-
-      // Datei lesen
-      const fileContent = fs.readFileSync(RATINGS_FILE, 'utf-8');
-      const data = JSON.parse(fileContent);
-      
-      if (!data || !Array.isArray(data.ratings)) {
-        console.log("Initializing empty ratings array");
-        await writeJsonFile(RATINGS_FILE, { ratings: [] });
-        return [];
-      }
-
-      console.log(`Loaded ${data.ratings.length} ratings successfully`);
-      return data.ratings;
+      // Return the in-memory array which should already be initialized from the file
+      console.log(`Returning ${this.ratingsArray.length} ratings from memory`);
+      return this.ratingsArray;
     } catch (error) {
       console.error("Error getting ratings:", error);
       return [];
@@ -166,10 +151,17 @@ export class FileStorage implements IStorage {
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
     try {
-      if (this.ratings[id]) {
-        delete this.ratings[id];
-        return writeJsonFile(RATINGS_FILE, {ratings: this.ratings});
+      const initialLength = this.ratingsArray.length;
+      this.ratingsArray = this.ratingsArray.filter(rating => rating.id !== id);
+      
+      if (initialLength !== this.ratingsArray.length) {
+        // Rating was found and removed
+        const success = await writeJsonFile(RATINGS_FILE, { ratings: this.ratingsArray });
+        console.log(`Rating ${id} deleted successfully`);
+        return success;
       }
+      
+      console.log(`Rating ${id} not found for deletion`);
       return false;
     } catch (error) {
       console.error("Error deleting rating:", error);
