@@ -3,8 +3,8 @@ import { AnimeRating, User, InsertUser } from "@shared/schema";
 import fs from "fs";
 import path from "path";
 
-const RATINGS_FILE = path.join(__dirname, "ratings.json");
-const USERS_FILE = path.join(__dirname, "users.json");
+const RATINGS_FILE = new URL("ratings.json", import.meta.url).pathname;
+const USERS_FILE = new URL("users.json", import.meta.url).pathname;
 
 // Hilfsfunktionen zum Lesen und Schreiben der Dateien
 const readJsonFile = (filePath: string) => {
