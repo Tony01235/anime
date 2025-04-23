@@ -1,4 +1,34 @@
+
 import { AnimeRating, User, InsertUser } from "@shared/schema";
+import fs from "fs";
+import path from "path";
+
+const RATINGS_FILE = path.join(__dirname, "ratings.json");
+const USERS_FILE = path.join(__dirname, "users.json");
+
+// Hilfsfunktionen zum Lesen und Schreiben der Dateien
+const readJsonFile = (filePath: string) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify({}));
+      return {};
+    }
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch (error) {
+    console.error(`Error reading file ${filePath}:`, error);
+    return {};
+  }
+};
+
+const writeJsonFile = (filePath: string, data: any) => {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Error writing file ${filePath}:`, error);
+    return false;
+  }
+};
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -9,15 +39,15 @@ export interface IStorage {
   deleteRating(id: string, userId: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private ratings: Map<string, AnimeRating>;
+export class FileStorage implements IStorage {
+  private users: { [key: number]: User };
+  private ratings: { [key: string]: AnimeRating };
   currentId: number;
 
   constructor() {
-    this.users = new Map();
-    this.ratings = new Map();
-    this.currentId = 1;
+    this.ratings = readJsonFile(RATINGS_FILE);
+    this.users = readJsonFile(USERS_FILE);
+    this.currentId = Math.max(0, ...Object.keys(this.users).map(Number)) + 1;
   }
 
   async saveRating(rating: AnimeRating, userId: number): Promise<AnimeRating> {
@@ -30,24 +60,30 @@ export class MemStorage implements IStorage {
       updatedAt: new Date().toISOString()
     };
 
-    this.ratings.set(rating.id, newRating);
+    this.ratings[rating.id] = newRating;
+    writeJsonFile(RATINGS_FILE, this.ratings);
     return newRating;
   }
 
   async getRatings(userId: number): Promise<AnimeRating[]> {
-    return Array.from(this.ratings.values());
+    return Object.values(this.ratings);
   }
 
   async deleteRating(id: string, userId: number): Promise<boolean> {
-    return this.ratings.delete(id);
+    if (this.ratings[id]) {
+      delete this.ratings[id];
+      writeJsonFile(RATINGS_FILE, this.ratings);
+      return true;
+    }
+    return false;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    return this.users[id];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
+    return Object.values(this.users).find(
       (user) => user.username === username
     );
   }
@@ -55,9 +91,10 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId++;
     const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    this.users[id] = user;
+    writeJsonFile(USERS_FILE, this.users);
     return user;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new FileStorage();
