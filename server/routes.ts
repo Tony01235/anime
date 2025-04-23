@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get anime recommendations from AniList API
+  // Get anime recommendations from Jikan API
   app.get("/api/recommendations", async (req, res) => {
     try {
       const { animeIds, limit = "10" } = req.query;
@@ -120,128 +120,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No valid anime IDs provided" });
       }
       
-      // Convert MAL IDs to titles for AniList search
-      const titlesPromises = malIds.map(async (id) => {
+      // Choose a random anime ID to get recommendations for
+      const randomAnimeId = malIds[Math.floor(Math.random() * malIds.length)];
+      
+      // Get recommendations directly from Jikan API
+      await delay(1000); // Add delay to avoid rate limiting
+      
+      let recommendationsResponse;
+      try {
+        console.log(`Getting recommendations for anime ID: ${randomAnimeId}`);
+        recommendationsResponse = await axios.get(
+          `${JIKAN_API_BASE_URL}/anime/${randomAnimeId}/recommendations`
+        );
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.log("Rate limited by Jikan API, retrying with longer delay...");
+          await delay(2000);
+          recommendationsResponse = await axios.get(
+            `${JIKAN_API_BASE_URL}/anime/${randomAnimeId}/recommendations`
+          );
+        } else {
+          throw error;
+        }
+      }
+      
+      const jikanRecommendations = recommendationsResponse.data.data;
+      
+      // Filter out recommendations that are already in the user's rated anime list and any hentai content
+      const filteredRecommendations = jikanRecommendations
+        .filter((rec: any) => {
+          // Filter out already rated anime
+          if (malIds.includes(rec.entry.mal_id)) {
+            return false;
+          }
+          
+          // Filter out hentai/adult content by checking genres (if available)
+          const isAdultContent = rec.entry.genres?.some((genre: any) => 
+            genre.name.toLowerCase() === "hentai" || 
+            genre.name.toLowerCase() === "ecchi"
+          );
+          
+          return !isAdultContent;
+        })
+        .slice(0, parseInt(limit as string));
+      
+      // Need to get full details for each recommendation
+      const detailPromises = filteredRecommendations.map(async (rec: any) => {
+        await delay(300); // Add delay between requests
         try {
-          const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}`);
-          return response.data.data.title;
+          const detailResponse = await axios.get(`${JIKAN_API_BASE_URL}/anime/${rec.entry.mal_id}`);
+          return detailResponse.data.data;
         } catch (error) {
-          console.error(`Error fetching title for anime ID ${id}:`, error);
+          console.error(`Error fetching details for anime ID ${rec.entry.mal_id}:`, error);
           return null;
         }
       });
       
-      // Add delays between requests to avoid rate limiting
-      const titles = (await Promise.all(titlesPromises)).filter(Boolean);
-      
-      if (titles.length === 0) {
-        return res.status(404).json({ message: "Could not find titles for any of the provided anime IDs" });
-      }
-      
-      // Get recommendations using AniList GraphQL API
-      const query = `
-        query ($search: String) {
-          Page(page: 1, perPage: ${limit}) {
-            media(type: ANIME, search: $search) {
-              id
-              idMal
-              title {
-                romaji
-                english
-                native
-              }
-              coverImage {
-                large
-                medium
-              }
-              bannerImage
-              format
-              status
-              episodes
-              genres
-              averageScore
-              description
-              startDate {
-                year
-              }
-              studios {
-                nodes {
-                  name
-                }
-              }
-            }
-          }
-        }
-      `;
-      
-      // Get genres of the rated animes to find similar ones
-      const genresPromises = malIds.map(async (id) => {
-        try {
-          const response = await axios.get(`${JIKAN_API_BASE_URL}/anime/${id}`);
-          // Extract genres from the anime
-          return response.data.data.genres?.map((g: any) => g.name) || [];
-        } catch (error) {
-          console.error(`Error fetching genres for anime ID ${id}:`, error);
-          return [];
-        }
-      });
-      
-      // Add delays between requests to avoid rate limiting
-      const genresArrays = (await Promise.all(genresPromises)).filter(arr => arr.length > 0);
-      
-      // Flatten and get unique genres
-      const allGenres = Array.from(new Set(genresArrays.flat()));
-      
-      // Choose a random genre if available, otherwise use a random title
-      let searchQuery;
-      if (allGenres.length > 0) {
-        const randomGenre = allGenres[Math.floor(Math.random() * allGenres.length)];
-        searchQuery = randomGenre; // Search by genre
-      } else {
-        // Fallback to title search if no genres available
-        searchQuery = titles[Math.floor(Math.random() * titles.length)];
-      }
-      
-      console.log("Using search query for recommendations:", searchQuery);
-      
-      const anilistResponse = await axios.post(ANILIST_API_URL, {
-        query,
-        variables: {
-          search: searchQuery
-        }
-      });
-      
-      // Convert AniList response to Jikan format for compatibility
-      const anilistData = anilistResponse.data.data.Page.media;
-      
-      // Map AniList data to Jikan format
-      const recommendations = anilistData
-        .filter((anime: any) => anime.idMal && !malIds.includes(anime.idMal))
-        .slice(0, parseInt(limit as string))
-        .map((anime: any) => ({
-          mal_id: anime.idMal,
-          title: anime.title.english || anime.title.romaji,
-          images: {
-            jpg: {
-              image_url: anime.coverImage.medium,
-              small_image_url: anime.coverImage.medium,
-              large_image_url: anime.coverImage.large
-            }
-          },
-          type: anime.format,
-          episodes: anime.episodes,
-          year: anime.startDate?.year,
-          score: anime.averageScore / 10, // AniList uses 100 scale, MAL uses 10
-          synopsis: anime.description,
-          studios: anime.studios?.nodes?.map((studio: any) => ({ name: studio.name })) || [],
-          aired: {
-            from: anime.startDate ? `${anime.startDate.year}-01-01` : null
-          },
-          genres: anime.genres?.map((genre: any) => ({ name: genre })) || []
-        }));
+      const animeDetails = (await Promise.all(detailPromises)).filter(Boolean);
       
       // Validate with our schema
-      const validatedRecommendations = recommendations.map((rec: any) => animeSearchResultSchema.parse(rec));
+      const validatedRecommendations = animeDetails.map((anime: any) => animeSearchResultSchema.parse(anime));
       
       res.json({ recommendations: validatedRecommendations });
     } catch (error) {

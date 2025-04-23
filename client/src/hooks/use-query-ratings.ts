@@ -29,6 +29,7 @@ export const useQueryRatings = () => {
         return [];
       }
     },
+    staleTime: 5 * 60 * 1000, // 5 Minuten Cache-Zeit, um mehrfache Anfragen zu reduzieren
   });
 
   // Speichere/Aktualisiere Bewertung
@@ -48,10 +49,24 @@ export const useQueryRatings = () => {
       }
       return await response.json();
     },
-    onSuccess: () => {
-      // Invalidiere den Query-Cache, um die neuen Daten zu laden
-      queryClient.invalidateQueries({ queryKey: [RATINGS_QUERY_KEY] });
+    onSuccess: (data, variables) => {
+      // Manuelles Update des Cache anstelle von Invalidierung, um mehrfache Netzwerkanfragen zu vermeiden
+      queryClient.setQueriesData({ queryKey: [RATINGS_QUERY_KEY] }, (oldData: AnimeRating[] | undefined) => {
+        if (!oldData) return [data];
+        
+        const existingIndex = oldData.findIndex(rating => rating.id === data.id);
+        if (existingIndex >= 0) {
+          // Aktualisiere die bestehende Bewertung
+          const newData = [...oldData];
+          newData[existingIndex] = data;
+          return newData;
+        } else {
+          // Füge neue Bewertung hinzu
+          return [...oldData, data];
+        }
+      });
       
+      // Toast nur einmal anzeigen
       toast({
         title: "Bewertung gespeichert",
         description: "Deine Anime-Bewertung wurde erfolgreich gespeichert.",

@@ -18,6 +18,7 @@ export const formatDate = (dateString: string): string => {
 export const calculateOverallRating = (categoryRatings: number[]): number => {
   if (!categoryRatings.length) return 0;
   
+  // Alle Werte werden berücksichtigt, auch 0
   const sum = categoryRatings.reduce((acc, val) => acc + val, 0);
   const average = sum / categoryRatings.length;
   

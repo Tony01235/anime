@@ -80,9 +80,10 @@ export const calculateOverallRating = (
   } else {
     // If we have an array of RatingCategory objects
     const categories = categoryRatings as RatingCategory[];
-    const values = categories.map(cat => cat.value).filter(val => val > 0);
+    // Nicht filtern - alle Werte einbeziehen, auch 0
+    const values = categories.map(cat => cat.value);
     sum = values.reduce((acc, val) => acc + val, 0);
-    count = values.length;
+    count = values.length; // Anzahl aller Kategorien
   }
   
   // Scale from 0-10 to 0-5 for overall rating
