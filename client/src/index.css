@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 350 78% 71%;
+  --primary-foreground: 350 100% 99%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 350 78% 85%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 350 78% 71%;
+  --radius: 0.5rem;
+  
+  /* Cherry blossom colors */
+  --sakura-50: 348 100% 98%;
+  --sakura-100: 348 100% 94%;
+  --sakura-200: 348 100% 90%;
+  --sakura-300: 350 96% 76%;
+  --sakura-400: 350 91% 65%;
+  --sakura-500: 350 78% 58%;
+  --sakura-600: 345 68% 52%;
+  --sakura-700: 280 50% 60%; 
+  --sakura-800: 251 25% 14%;
+  --sakura-900: 250 33% 10%;
+  
+  /* Chart colors */
+  --chart-1: 350 78% 71%;
+  --chart-2: 280 50% 60%;
+  --chart-3: 200 95% 55%;
+  --chart-4: 30 90% 60%;
+  --chart-5: 140 60% 50%;
+
+  /* Sidebar colors */
+  --sidebar-background: var(--sakura-50);
+  --sidebar-foreground: var(--sakura-900);
+  --sidebar-primary: var(--sakura-500);
+  --sidebar-primary-foreground: white;
+  --sidebar-accent: var(--sakura-200);
+  --sidebar-accent-foreground: var(--sakura-900);
+  --sidebar-border: var(--sakura-200);
+  --sidebar-ring: var(--sakura-500);
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 350 78% 58%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 280 50% 60%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 280 50% 60%;
+  --radius: 0.5rem;
+  
+  /* Sidebar colors in dark mode */
+  --sidebar-background: var(--sakura-900);
+  --sidebar-foreground: var(--sakura-200);
+  --sidebar-primary: var(--sakura-700);
+  --sidebar-primary-foreground: white;
+  --sidebar-accent: var(--sakura-800);
+  --sidebar-accent-foreground: var(--sakura-200);
+  --sidebar-border: var(--sakura-800);
+  --sidebar-ring: var(--sakura-700);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-sakura-100 dark:bg-sakura-800 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-sakura-300 dark:bg-sakura-700 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-sakura-400 dark:bg-sakura-600;
+  }
+  
+  /* Custom styling for anime cards */
+  .anime-card {
+    @apply relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300;
+  }
+  
+  .anime-card .anime-overlay {
+    @apply absolute inset-0 bg-sakura-500/80 dark:bg-sakura-700/80 flex items-center justify-center transition-opacity duration-300 opacity-0;
+  }
+  
+  .anime-card:hover .anime-overlay {
+    @apply opacity-100;
+  }
+  
+  /* Sakura falling animation */
+  .sakura-falling {
+    @apply absolute z-[-1] pointer-events-none;
+    animation: fall linear infinite, sway ease-in-out infinite alternate;
+  }
+  
+  @keyframes fall {
+    0% {
+      transform: translateY(-100px) rotate(0deg);
+    }
+    100% {
+      transform: translateY(calc(100vh + 100px)) rotate(360deg);
+    }
+  }
+  
+  @keyframes sway {
+    0% {
+      transform: translateX(0) rotate(0deg);
+    }
+    100% {
+      transform: translateX(50px) rotate(45deg);
+    }
+  }
+}
