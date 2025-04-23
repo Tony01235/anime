@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, StarHalf } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,11 @@ export const StarRating: React.FC<StarRatingProps> = ({
 }) => {
   const [rating, setRating] = useState(initialRating);
   const [hoverRating, setHoverRating] = useState(0);
+  
+  // Update rating when initialRating prop changes
+  useEffect(() => {
+    setRating(initialRating);
+  }, [initialRating]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, starIndex: number) => {
     if (readOnly) return;

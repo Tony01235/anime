@@ -180,7 +180,8 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
                       initialRating={category.value} 
                       max={10}
                       precision={0.5}
-                      onChange={(value) => handleCategoryRatingChange(index, value)} 
+                      onChange={(value) => handleCategoryRatingChange(index, value)}
+                      colorFilled="text-sakura-400 dark:text-sakura-500"
                     />
                   </div>
                 ))}
@@ -195,6 +196,7 @@ const AnimeRatingModal: React.FC<AnimeRatingModalProps> = ({
                       precision={0.5}
                       readOnly
                       size="lg"
+                      colorFilled="text-sakura-400 dark:text-sakura-500"
                     />
                   </div>
                   <span className="text-xl font-bold text-sakura-500 dark:text-sakura-300">

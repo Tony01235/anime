@@ -123,7 +123,7 @@ const SavedRatings: React.FC<SavedRatingsProps> = ({
                     <td className="py-3 px-4 text-center">
                       <div className="flex justify-center">
                         <div className="flex items-center space-x-1">
-                          <StarRating initialRating={rating.overallRating} readOnly size="sm" />
+                          <StarRating initialRating={rating.overallRating} readOnly size="sm" colorFilled="text-sakura-400 dark:text-sakura-500" />
                           <span className="font-medium">{rating.overallRating.toFixed(1)}</span>
                         </div>
                       </div>
