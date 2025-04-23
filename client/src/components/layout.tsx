@@ -17,9 +17,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <header className="bg-white dark:bg-sakura-900 shadow-md relative z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/">
-            <div className="flex items-center cursor-pointer">
+            <div className="flex items-center cursor-pointer relative">
               <svg 
-                className="w-10 h-10 text-sakura-500 dark:text-sakura-300" 
+                className="w-10 h-10 text-sakura-500 dark:text-sakura-300 relative z-10" 
                 viewBox="0 0 40 40" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
@@ -45,7 +45,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   fill="currentColor" 
                 />
               </svg>
-              <h1 className="ml-3 text-2xl font-bold text-sakura-500 dark:text-sakura-300 font-sans">
+              <h1 className="ml-3 text-2xl font-bold text-sakura-500 dark:text-sakura-300 font-sans relative z-0">
                 Anime Sakura
               </h1>
             </div>
