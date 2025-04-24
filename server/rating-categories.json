@@ -24,6 +24,11 @@
       "id": "enjoyment",
       "name": "Unterhaltung",
       "description": "Wie unterhaltsam und fesselnd war der Anime insgesamt"
+    },
+    {
+      "id": "enjoyment",
+      "name": "Test",
+      "description": "Test"
     }
   ]
 }
